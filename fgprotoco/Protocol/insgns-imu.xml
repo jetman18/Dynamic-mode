@@ -1,0 +1,82 @@
+<?xml version="1.0"?>
+
+<!-- Example usage: <dash><dash>generic=file,out,50,fgfs.imu,insgns-imu -->
+
+<PropertyList>
+
+ <generic>
+
+  <output>
+
+   <binary_mode>true</binary_mode>
+   <binary_footer>magic,0x12345678</binary_footer>
+
+     <!-- Orientation -->
+    <chunk>
+    <name>roll rate ("p" rad/sec)</name>
+    <type>float</type>
+    <format>%.6f</format>
+    <node>/fdm/jsbsim/velocities/pi-rad_sec</node>
+   </chunk>
+
+   <chunk>
+    <name>pitch rate ("q" rad/sec)</name>
+    <type>float</type>
+    <format>%.6f</format>
+    <node>/fdm/jsbsim/velocities/qi-rad_sec</node>
+   </chunk>
+
+   <chunk>
+    <name>yaw rate ("r" rad/sec)</name>
+    <type>float</type>
+    <format>%.6f</format>
+    <node>/fdm/jsbsim/velocities/ri-rad_sec</node>
+   </chunk>
+   <chunk>
+    <name>roll-deg</name>
+    <type>float</type>
+    <format>%.2f</format>
+    <node>/orientation/roll-deg</node>
+   </chunk>
+
+   <chunk>
+    <name>pitch-deg</name>
+    <type>float</type>
+    <format>%.2f</format>
+    <node>/orientation/pitch-deg</node>
+   </chunk>
+
+   <chunk>
+    <name>heading-deg</name>
+    <type>float</type>
+    <format>%.2f</format>
+    <node>/orientation/heading-deg</node>
+   </chunk>
+
+   <chunk>
+    <name>latitude (rad)</name>
+    <type>float</type>
+    <format>%.10f</format>
+    <node>/position/latitude-deg</node>
+   </chunk>
+
+    <chunk>
+    <name>longitude (rad)</name>
+    <type>float</type>
+    <format>%.10f</format>
+    <node>/position/longitude-deg</node>
+   </chunk>
+
+   <chunk>
+    <name>negative altitiude (m)</name>
+    <type>float</type>
+    <format>%.3f</format>
+    <node>/position/altitude-ft</node>
+    <factor>-0.3048</factor>                 
+   </chunk>
+
+  </output>
+
+ </generic>
+
+</PropertyList>

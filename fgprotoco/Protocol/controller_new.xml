@@ -1,0 +1,54 @@
+<?xml version="1.0"?>
+
+<PropertyList>
+ 
+ <generic>
+
+  <input>
+
+   <line_separator>newline</line_separator>
+   <var_separator>tab</var_separator> 
+   
+   <!-- Flight Controls -->
+   <chunk>
+    <name>aileron</name>
+    <type>float</type>
+    <node>/controls/flight/aileron</node>
+   </chunk>
+<!--
+   <chunk>
+    <name>aileron-trim</name>
+    <type>float</type>
+    <node>/controls/flight/aileron-trim</node>
+   </chunk>
+-->
+   <chunk>
+    <name>elevator</name>
+    <type>float</type>
+    <node>/controls/flight/elevator</node>
+   </chunk>
+<!--
+   <chunk>
+    <name>rudder-trim</name>
+    <type>float</type>
+    <node>/controls/flight/rudder-trim</node>
+   </chunk>
+-->
+   <!-- Engines -->
+   <chunk>
+    <name>throttle</name>
+    <type>float</type>
+    <node>/controls/engines/engine[0]/throttle</node>
+   </chunk>
+<!-- 
+   <chunk>
+    <name>starter</name>
+    <type>float</type>
+    <node>/controls/engines/engine[0]/starter</node>
+   </chunk> -->
+
+ </input>
+
+ </generic>
+
+</PropertyList>

@@ -1,278 +1,234 @@
-import time
+from math import *
+from utils import *
 import matplotlib.pyplot as plt
 from mpl_toolkits import mplot3d
-#from windowview import window
 import multiprocessing as mp
-import struct
-import math
-import utils 
+import time
 
 # max speed 100 km/h
 # max thrust of electric motor 0.9 kg
 
-# parameters
-S_ref = 0.33             # m*m  ref area
-S_aile = 0.006           # m*m
-P_ref = 0.024            # m*m
-C_ref = 0.276            # m    ref chord
-B_ref = 1.2              # m    ref span
-X_aero = 0.201           # m   distance to aerodynamic center
-mass   = 0.9             # kg
-I_xx   = 0.0306          # kgm*m 
-I_yy   = 0.018           # kgm*m 
-I_zz   = 0.0251          # kgm*m 
-d_aile_to_x = 0.2        # distance from aileron to x axis
-d_ele_to_cg = 0.13        # distance from aileron to x axis
-d_aile_to_z = 0.13        # distance from aileron to x axis
+# convert 
+toDeg = 57.29577
+toRad = 0.01745
 
-Air_density = 1.293
-anlpha = 0               # attack angle
-Cl_0 = 0.06              # lift coefficient
-Cd_0 = 0.79              # drag coefficient 
-aile_ele_max_angle = 40  #
-earth_radius       = 6371000  
-attack_angle = 7
-max_pitch_angle = 60
-max_roll_angle = 60
-rad = 0.01745
-_g = -9.81
-_dt = 0.01
-deg = 57.29
+# constan variable
+pi           = 3.14159
+earth_radius = 6371000  
+gravity      = -9.81 
 
+# dynamic parameters
+air_density     = 1.293
+mass            = 0.9         # weight of aircraft
+wing_area       = 0.21        # m*m  ref area
+wing_ctrl_area  = 0.015       # control surface area
+Cd_o            = 0.14        # drag coeffient zero
+aileron_Cl      = 0.011
+aileron_Cd      = 0.0013
+dis_aile2center = 0.12
+dis_ele2center  = 0.2
+max_aileron_angle = 20        # max control angle
+
+cd_moment_x     = 0.05
+cd_moment_y     = 0.1
+cd_moment_z     = 0.012
+Cm_o            = -0.0
+Ixx             = 0.0106
+Iyy             = 0.018 
+Izz             = 0.0251
 init_latitude  = 37.628715674334124
 init_longitude = -122.39334575867426
-init_altitude  =  2
+init_altitude  =  500
 
-aero_drag_moment_x_gain = 0.006
-aero_drag_moment_y_gain = 0.002
-aero_drag_moment_z_gain = 0.001
-# end parameters
-####################
-_thrust = 0
-_pitch = 0
-_roll = 0
-_yaw = 0
-############
-_pitch_dot = 0
-_roll_dot = 0
-_yaw_dot = 0
+# attitude
+isFly = 0
+alpha = 0  # attack of angle
+beta = 0   # sideslip angle
 
-###########
-_x_vel = 0
-_y_vel = 0
-_z_vel = 0
-u_body = 0
-############
-_x_p = 0
-_y_p = 0
-_z_p = 0
-############
-_x_deg = init_latitude
-_y_deg = init_longitude
-#############
-ctrl_deg_L = 0
-ctrl_deg_R = 0
+roll = 0
+pitch = 10*toRad
+yaw = 358*toRad
 
+vx = 0
+vy = 0
+vz = 0
 
-x=[]
-y=[]
-z=[]
+px = 0
+py = 0
+pz = 0 
 
-mm = 0
+P = 0 
+Q = 0
+R = 0
 
-def calcalate_air_density():
-    density = Air_density*5000/(_z_p + 5000)
-    return density
+T = 10  # thrust
+ctrl_left = 0
+ctrl_right = 0
 
-def calculate_lift_coefficient(anpha):
-    anpha += attack_angle
-    anpha_ = utils.cvrt(anpha)
-    cl = 0.02*anpha_* utils.sign(anpha )
-    return cl
+#f = open("data.txt", "w")
+def loop(dt,ch2,ch3):
+    global yaw,vx,vy,vz,alpha,T,roll,pitch,yaw
+    global px,py,pz,P,Q,R,isFly,ctrl_left,ctrl_right
 
-def calculate_drag_coefficient(anpha):
-    anpha += attack_angle
-    anpha = utils.cvrt(anpha)
-    cd = 0.01*anpha
-    return cd
-
-def calculate_force_x_body():
-    F_drag_bx = 0.5*Cd_bx
-    F_bx = _thrust
-
-def calculate_force_z():
-    T = _thrust*math.sin(_pitch)
+    cosx = cos(roll)
+    cosy = cos(pitch)
+    cosz = cos(yaw)
+    sinx = sin(roll)
+    siny = sin(pitch)
+    sinz = sin(yaw)
+    tany = tan(pitch)
     
-    cl__ = calculate_lift_coefficient(_pitch*deg)
-    lift_force = S_ref*_x_vel*_x_vel*calcalate_air_density()*cl__
-    #print(cl__)
-    #lift_force *= abs(math.cos(_roll))
-    drag_force = 1.5*cl__*S_ref*_z_vel*_z_vel*calcalate_air_density()
+    # alpha
+    v_horizon = sqrt(vx*vx + vy*vy)
+    temp_a = atan2(vz,v_horizon)*toDeg
+    temp_a =  pitch*toDeg - temp_a
+
+    # beta
+    temp_beta  = abs(atan2(vy,vx)*toDeg)
+    beta_t = 0
+    if  vy >= 0:
+        beta_t = temp_beta
+    elif  vy <= 0:
+        beta_t = 360 - temp_beta
+    beta_t = yaw*toDeg - beta_t  # beta 0 - 359
+    '''    
+    if beta_t > 180:
+        beta_t = 360 - beta
+    elif beta_t < -180:
+        beta_t = 360 + beta'''
+
+    alpha =  temp_a*cosx + beta_t*sinx
+    beta  = -temp_a*sinx + beta_t*cosx
+    #print(int(alpha),'  ',int(beta))
+
+    Cd = (pow(abs(alpha),3.7)/125 + alpha)*3/3625 + Cd_o
+    Cl = 0.01*alpha
+    cl = constrain(cl,-1.3,1.3)
+
+    # absolute velocity
+    Vsqr = vx*vx + vy*vy + vz*vz
+    dynamic_p = 0.5*air_density*Vsqr
+    L =  dynamic_p*wing_area*Cl
+    D = -dynamic_p*wing_area*Cd *0.5
+
+    sinA = sin(alpha*toRad)
+    cosA = cos(alpha*toRad)
+    cosB = cos(beta*toRad)
+    sinB = sin(beta*toRad)
     
-    #print(_x_vel)
-    P = mass*_g
-    return T + lift_force - drag_force + P
+    # rotate aero(or wind frame) to body frame
+    Fbx =  L*sinA + D*cosA*cosB + T
+    Fby = -D*sinB
+    Fbz =  L*cosA - D*cosB*sinA
+     
+    # rotate body frame to inertial frame
+    Fex = Fbx*cosy*cosz - Fbz*(sinx*sinz + cosx*cosz*siny) - Fby*(cosx*sinz - cosz*sinx*siny)
+    Fey = Fby*(cosx*cosz + sinx*siny*sinz) + Fbz*(cosz*sinx - cosx*siny*sinz) + Fbx*cosy*sinz
+    Fez = Fbx*siny + Fbz*cosx*cosy - Fby*cosy*sinx + mass*gravity
 
-def calculate_force_x():
-    thrust = _thrust*math.cos(_pitch)
-    cd = calculate_drag_coefficient(_pitch*deg)
-    drag_force = 16*cd*P_ref*_x_vel*_x_vel*calcalate_air_density()
-    #print(_x_vel)
-    return thrust - drag_force
-
-def calculate_force_y():
-    cl = calculate_lift_coefficient(_pitch*deg)
-    lift_force = 0.5*cl*S_ref*_x_vel*_x_vel*calcalate_air_density()
-
-    lift_force *= math.sin(_roll)
-    return  lift_force
-
-def calculate_moment_x():
-    global ctrl_deg_R,ctrl_deg_L
-    ctrl_deg_L = utils.constrain(ctrl_deg_L,-aile_ele_max_angle,aile_ele_max_angle) 
-    ctrl_deg_R = utils.constrain(ctrl_deg_R,-aile_ele_max_angle,aile_ele_max_angle) 
-    cl_L = 0.01*ctrl_deg_L
-    cl_R = 0.01*ctrl_deg_R
-
-    ctrl_wing_force_L =  0.5*cl_L*S_aile*u_body*u_body*Air_density
-    ctrl_wing_force_R =  0.5*cl_R*S_aile*u_body*u_body*Air_density
-    moment_L = -ctrl_wing_force_L* d_aile_to_x
-    moment_R = ctrl_wing_force_R* d_aile_to_x
-
-    drag_moment = aero_drag_moment_x_gain*utils.sq(_roll_dot)
-    return moment_L + moment_R - drag_moment
-
-def calculate_moment_y():
+    accEx = Fex/mass
+    accEy = Fey/mass
+    accEz = Fez/mass
     
-    global ctrl_deg_R,ctrl_deg_L
-    ctrl_deg_L = utils.constrain(ctrl_deg_L,-aile_ele_max_angle,aile_ele_max_angle) 
-    ctrl_deg_R = utils.constrain(ctrl_deg_R,-aile_ele_max_angle,aile_ele_max_angle) 
-    cl_L = 0.1*ctrl_deg_L
-    cl_R = 0.1*ctrl_deg_R
+    # zero acce z on ground
+    if accEz > 0 and isFly == 0:
+        isFly = 1 
+    elif accEz < 0 and isFly == 0:
+        accEz = 0 
+    
+    px += vx*dt + 0.5*accEx*dt*dt
+    py += vy*dt + 0.5*accEy*dt*dt
+    pz += vz*dt + 0.5*accEz*dt*dt
+
+    '''    
+    if time.time() - last_t > 200:
+        l =str(px) + ' ' + str(py) + ' ' + str(pz) + '\n'
+        f.write(l)
+        last_t = time.time()
+    '''
+    vx +=  accEx*dt 
+    vy +=  accEy*dt
+    vz +=  accEz*dt
+
+     
+
+
+    #moment
+    '''    
+      -  <---- CH2 -----> +
+                +
+                |
+               ch3
+                |
+                -
+    '''
+    ctrl_left  = -ch2 + ch3
+    ctrl_right =  ch2 + ch3
+    ctrl_left = constrain(ctrl_left,-1,1)
+    ctrl_right = constrain(ctrl_right,-1,1)
+    #scale to deg
+    ctrl_left  *= 20
+    ctrl_right *= 20
+
+    lift_left   = dynamic_p*wing_ctrl_area*aileron_Cl*ctrl_left
+    lift_right  = dynamic_p*wing_ctrl_area*aileron_Cl*ctrl_right
+    drag_left   = dynamic_p*wing_ctrl_area*aileron_Cd*ctrl_left
+    drag_right  = dynamic_p*wing_ctrl_area*aileron_Cd*ctrl_right
+
+    # pitching moment
+    Cm_p = (0.002*pow(alpha,3) + 0.2*alpha)*0.0002
+    #Cm_p = constrain(Cm_p,-1,1)
+
+    Pitching_moment = dynamic_p*wing_area*Cm_p
+    yaw_st = dynamic_p*0.01*beta*0.01
+    Mx_total = (lift_right - lift_left)*dis_aile2center -sign(P)*P*P*cd_moment_x
+    My_total = (lift_right + lift_left)*dis_ele2center - Pitching_moment  -sign(Q)*Q*Q*cd_moment_y #
+    Mz_total = (abs(drag_left) - abs(drag_right))*dis_aile2center - yaw_st*0.01  - sign(R)*R*R*cd_moment_z
+    
+    P_dot = Mx_total/Ixx
+    Q_dot = My_total/Iyy
+    R_dot = Mz_total/Izz
+
+    P += P_dot*dt
+    Q += Q_dot*dt
+    R += R_dot*dt
+
+    # cvt body rate to euler rate
+    r_dot   = P + R*cosx*tany + Q*sinx*tany
+    p_dot   = Q*cosx - R*sinx
+    y_dot   = R*cosx/cosy + Q*sinx/cosy
+
+    roll  += r_dot*dt
+    pitch += p_dot*dt
+    yaw   += y_dot*dt
+
+    yaw   = swap360(yaw*toDeg)*toRad
+    roll  = swap180(roll*toDeg)*toRad
+    pitch = swap180(pitch*toDeg)*toRad
+
+    
+    if roll*toDeg > 80 or roll*toDeg < -80:
+        P = 0
+    roll = constrain(roll,-80*toRad,80*toRad)
+    
+    if pitch*toDeg > 80 or pitch*toDeg < -80:
+        Q = 0
+    pitch = constrain(pitch,-80*toRad,80*toRad)
+
+    return roll*toDeg ,pitch*toDeg,yaw*toDeg
+    
  
-    ctrl_wing_force_L =  0.5*cl_L*S_aile*u_body*u_body*Air_density
 
-    ctrl_wing_force_R =  0.5*cl_R*S_aile*u_body*u_body*Air_density
- 
-    moment_L = ctrl_wing_force_L* d_ele_to_cg*0.01
-    moment_R = ctrl_wing_force_R* d_ele_to_cg*0.01
+def get_longitude():
+    l = py/earth_radius*toDeg
+    return l + init_longitude
 
-    drag_moment = aero_drag_moment_y_gain*utils.sq(_pitch_dot)
-    
-    return 0#moment_L + moment_R - drag_moment
+def get_latitude():
+    l = px/earth_radius*toDeg
+    return l + init_latitude
 
-def calculate_moment_z():
-    global ctrl_deg_R,ctrl_deg_L
-    total_angle = abs(ctrl_deg_R) - abs(ctrl_deg_L)
-    total_angle = utils.constrain(total_angle,-aile_ele_max_angle,aile_ele_max_angle) 
-    cl_d = 0.007*total_angle
-    ctrl_wing_force =  0.5*cl_d*S_aile*u_body*u_body*Air_density
-    moment =  ctrl_wing_force* d_aile_to_z
-    drag_moment = aero_drag_moment_z_gain*utils.sq(_yaw_dot)
-    return moment - drag_moment
+def get_altitude():
+    return pz + init_altitude
 
-state = 1
-_yaw = 180*rad
-def dynamicMode():
-    global _x_p,_x_vel,_pitch,_pitch_dot,_x_deg,_y_deg
-    global _y_p,_y_vel,_roll,_roll_dot,state
-    global _z_p,_z_vel,_yaw,_yaw_dot,u_body
-
-    # U body m/s
-    a_x_body = (_thrust + mass*_g*math.sin(_pitch) - utils.sq(u_body)*0.014)/mass
-    u_body += a_x_body*_dt
-    #u_body= utils.constrain(u_body,-25,25)
-    #print(u_body)
-
-    # x axis longitude
-    F_x = calculate_force_x()
-    _x_acc = F_x/mass
-    _x_p   += _x_vel*_dt + 0.5*_x_acc*_dt*_dt
-    x_temp = _x_p
-    x_temp   *=math.cos(_yaw)
-    print(x_temp/earth_radius)
-    _x_deg += x_temp/earth_radius
-    _x_vel += _x_acc*_dt
-    _x_vel= utils.constrain(_x_vel,-25,25)
-
-    # y axis
-    F_y = calculate_force_y()
-    _y_acc = F_y/mass
-    _y_p   += _y_vel*_dt + 0.5*_y_acc*_dt*_dt
-    y_temp = _y_p
-    y_temp   *=math.sin(_yaw)
-    _y_deg += y_temp/earth_radius
-    _y_vel += _y_acc*_dt
-    _y_vel= utils.constrain(_y_vel,-25,25)
-
-    # z axis
-    F_z = calculate_force_z()
-    _z_acc = F_z/mass
-    if state and F_z<0:
-        _z_acc = 0
-    elif F_z>0:
-        state = 0
-    _z_p   += _z_vel*_dt + 0.5*_z_acc*_dt*_dt
-    _z_vel += _z_acc*_dt
-    _z_vel= utils.constrain(_z_vel,-25,25)
-    _z_p= utils.constrain(_z_p,0,7000)
-
-   # moment
-    M_y = calculate_moment_y()
-    if(_z_p > 0):
-        pitch_acc = M_y/I_yy
-        _pitch += _pitch_dot*_dt + 0.5*pitch_acc*_dt*_dt
-        _pitch_dot += pitch_acc*_dt
-        _pitch = utils.swap180(_pitch*deg)/deg
-        _pitch = utils.constrain(_pitch,-60,60)
-
-    M_x = calculate_moment_x()
-    roll_acc = M_x/I_xx
-    _roll += _roll_dot*_dt + 0.5*roll_acc*_dt*_dt
-    _roll_dot += roll_acc*_dt
-    _roll = utils.swap180(_roll*deg)/deg
-    _roll = utils.constrain(_roll,-60,60)
-
-
-    M_z = calculate_moment_z()
-    yaw_acc = M_z/I_zz
-    _yaw += _yaw_dot*_dt + 0.5*yaw_acc*_dt*_dt
-    _yaw_dot += yaw_acc*_dt
-    _yaw = utils.swap360(_yaw*deg)/deg
-
-_thrust = 9  # max
-attack_angle = 3
-
-# for i in range(3000):
-#     if i>1000:
-#         pass
-#         #_pitch = 160*rad
-#         #ctrl_deg_L = 2
-#         #ctrl_deg_R = 2
-#         #_pitch = 1*rad
-#         #print(_pitch*deg)
-#     dynamicMode()
-#     #print(_x_deg,' ',_y_deg)
-#     #x.append(_x_deg)
-#     #y.append(_y_deg)
-#     #z.append(_z_p)
-#     #time.sleep(0.01)
-
-
-# fig = plt.figure(figsize = (8,7))
-# ax = plt.axes(projection ="3d")
-# #ax.set_xlim([0,3000])
-# #ax.set_ylim([0,3000])
-# #ax.set_zlim([0,2000])
-# ax.scatter3D(x, y, z)
-# ax.set_aspect('equal')
-# ax.set_xlabel('x')
-# ax.set_ylabel('y')
-# ax.set_zlabel('z')
-# plt.title("simple 3D scatter plot")
-
-# #plt.plot(x,z, color='black');
-# #plt.grid()
-# plt.show()
 
 

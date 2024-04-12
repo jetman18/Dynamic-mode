@@ -5,7 +5,7 @@ import multiprocessing as mp
 import struct
 import config as cfg
 import controller as ctrl
-import mode as plane
+import dynamic as plane
 from joystick import *
 toDeg = 57.29577
 toRad = 0.01745
