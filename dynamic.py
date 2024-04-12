@@ -12,7 +12,7 @@ import time
 toDeg = 57.29577
 toRad = 0.01745
 
-# constan variable
+# constan variables
 pi           = 3.14159
 earth_radius = 6371000  
 gravity      = -9.81 
