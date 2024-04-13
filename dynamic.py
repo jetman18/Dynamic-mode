@@ -160,6 +160,7 @@ def loop(dt,ch2,ch3):
     ch2 = 0.2*pow(ch2,3) + 0.2*ch2
     ch3 = 0.2*pow(ch3,3) + 0.2*ch3
 
+
     ctrl_left  = -ch2 + ch3
     ctrl_right =  ch2 + ch3
     ctrl_left = constrain(ctrl_left,-1,1)
