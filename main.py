@@ -46,12 +46,13 @@ if __name__ == '__main__':  # NOTE:
         ch2,ch3 = getjoystick()
         #print(ch2*10,'-',ch3*10)
         
-        roll,pitch,yaw = plane.loop(0.02,ch2,ch3)
+        roll,pitch,yaw = plane.loop(0.01,ch2,ch3)
         lat = plane.get_latitude()
         lon = plane.get_longitude()
         alt = plane.get_altitude()
         roll = plane.roll*toDeg
         pitch = plane.pitch*toDeg
+        #print(int(roll),' ',int(pitch),' ',int(yaw))
         try:
             buffer = ctrl.control2(lat,lon,alt,roll,pitch,yaw)
             server_socket.sendto(buffer,addr)
@@ -60,7 +61,7 @@ if __name__ == '__main__':  # NOTE:
             pass
         #buffer = ctrl.control2(37.628715674334124,-122.39334575867426,100,0,0,0)
         
-        while(time.time() - last_time < 0.02):
+        while(time.time() - last_time < 0.01):
             loop_check = 0 # 50hz
         if loop_check:
             loop_timeout_count +=1

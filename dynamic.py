@@ -12,9 +12,9 @@ import time
 toDeg = 57.29577
 toRad = 0.01745
 
-# constan variable
+# constan variables
 pi           = 3.14159
-earth_radius = 6371000  
+earth_radius = 6371000  #m
 gravity      = -9.81 
 
 # dynamic parameters
@@ -23,6 +23,7 @@ mass            = 0.9         # weight of aircraft
 wing_area       = 0.21        # m*m  ref area
 wing_ctrl_area  = 0.015       # control surface area
 Cd_o            = 0.14        # drag coeffient zero
+Cl_0            = 0.04
 aileron_Cl      = 0.011
 aileron_Cd      = 0.0013
 dis_aile2center = 0.12
@@ -31,43 +32,37 @@ max_aileron_angle = 20        # max control angle
 
 cd_moment_x     = 0.05
 cd_moment_y     = 0.1
-cd_moment_z     = 0.012
+cd_moment_z     = 0.042
 Cm_o            = -0.0
 Ixx             = 0.0106
 Iyy             = 0.018 
 Izz             = 0.0251
-init_latitude  = 37.628715674334124
-init_longitude = -122.39334575867426
-init_altitude  =  500
+#init_latitude  = 37.628715674334124
+#init_longitude = -122.39334575867426
+init_latitude  = 37.472
+init_longitude = -121.170
+init_altitude  =  50
 
 # attitude
 isFly = 0
 alpha = 0  # attack of angle
 beta = 0   # sideslip angle
 
-roll = 0
-pitch = 10*toRad
-yaw = 358*toRad
+roll = 0          # rad
+pitch = 10*toRad  # rad
+yaw = 358*toRad   # rad
 
-vx = 0
-vy = 0
-vz = 0
+vx = 0; vy = 0; vz = 0
+px = 0; py = 0; pz = 0 
+P = 0; Q = 0; R = 0
 
-px = 0
-py = 0
-pz = 0 
-
-P = 0 
-Q = 0
-R = 0
-
-T = 10  # thrust
+T = 20          # thrust
 ctrl_left = 0
 ctrl_right = 0
 
 #f = open("data.txt", "w")
 def loop(dt,ch2,ch3):
-    global yaw,vx,vy,vz,alpha,T,roll,pitch,yaw
+    global yaw,vx,vy,vz,alpha,T,roll,pitch,yaw,alpha
     global px,py,pz,P,Q,R,isFly,ctrl_left,ctrl_right
 
     cosx = cos(roll)
@@ -91,20 +86,21 @@ def loop(dt,ch2,ch3):
     elif  vy <= 0:
         beta_t = 360 - temp_beta
     beta_t = yaw*toDeg - beta_t  # beta 0 - 359
-    '''    
-    if beta_t > 180:
-        beta_t = 360 - beta
-    elif beta_t < -180:
-        beta_t = 360 + beta'''
 
+    if beta_t < -180:
+        beta_t = beta_t + 360
+    elif beta_t > 180:
+        beta_t = beta_t - 360
+    
     alpha =  temp_a*cosx + beta_t*sinx
     beta  = -temp_a*sinx + beta_t*cosx
-    #print(int(alpha),'  ',int(beta))
+
+    #print(int(pitch*toDeg),' ',int(alpha))
 
     Cd = (pow(abs(alpha),3.7)/125 + alpha)*3/3625 + Cd_o
-    Cl = 0.01*alpha
-    cl = constrain(cl,-1.3,1.3)
-
+    Cl = 0.01*alpha + Cl_0 
+    #Cl = constrain(Cl,-1.3,1.3)
+    
     # absolute velocity
     Vsqr = vx*vx + vy*vy + vz*vz
     dynamic_p = 0.5*air_density*Vsqr
@@ -116,6 +112,7 @@ def loop(dt,ch2,ch3):
     cosB = cos(beta*toRad)
     sinB = sin(beta*toRad)
     
+
     # rotate aero(or wind frame) to body frame
     Fbx =  L*sinA + D*cosA*cosB + T
     Fby = -D*sinB
@@ -150,9 +147,7 @@ def loop(dt,ch2,ch3):
     vy +=  accEy*dt
     vz +=  accEz*dt
 
-     
-
-
+    
     #moment
     '''    
       -  <---- CH2 -----> +
@@ -162,6 +157,9 @@ def loop(dt,ch2,ch3):
                 |
                 -
     '''
+    ch2 = 0.2*pow(ch2,3) + 0.2*ch2
+    ch3 = 0.2*pow(ch3,3) + 0.2*ch3
+
     ctrl_left  = -ch2 + ch3
     ctrl_right =  ch2 + ch3
     ctrl_left = constrain(ctrl_left,-1,1)
@@ -175,16 +173,22 @@ def loop(dt,ch2,ch3):
     drag_left   = dynamic_p*wing_ctrl_area*aileron_Cd*ctrl_left
     drag_right  = dynamic_p*wing_ctrl_area*aileron_Cd*ctrl_right
 
+    drag_left = 0
+    drag_right = 0
+
     # pitching moment
-    Cm_p = (0.002*pow(alpha,3) + 0.2*alpha)*0.0002
+    Cm_p = (0.002*pow(alpha,3) + 0.5*alpha)*0.0002 + Cm_o
+    #Cm_p = alpha*0.0001
+    
     #Cm_p = constrain(Cm_p,-1,1)
 
     Pitching_moment = dynamic_p*wing_area*Cm_p
-    yaw_st = dynamic_p*0.01*beta*0.01
+    yaw_st = dynamic_p*0.0005*beta
     Mx_total = (lift_right - lift_left)*dis_aile2center -sign(P)*P*P*cd_moment_x
     My_total = (lift_right + lift_left)*dis_ele2center - Pitching_moment  -sign(Q)*Q*Q*cd_moment_y #
     Mz_total = (abs(drag_left) - abs(drag_right))*dis_aile2center - yaw_st*0.01  - sign(R)*R*R*cd_moment_z
     
+
     P_dot = Mx_total/Ixx
     Q_dot = My_total/Iyy
     R_dot = Mz_total/Izz
@@ -198,22 +202,27 @@ def loop(dt,ch2,ch3):
     p_dot   = Q*cosx - R*sinx
     y_dot   = R*cosx/cosy + Q*sinx/cosy
 
+    #print(int(y_dot*toDeg)),
+
     roll  += r_dot*dt
     pitch += p_dot*dt
     yaw   += y_dot*dt
 
     yaw   = swap360(yaw*toDeg)*toRad
-    roll  = swap180(roll*toDeg)*toRad
-    pitch = swap180(pitch*toDeg)*toRad
+    #roll  = swap180(roll*toDeg)*toRad
+    #pitch = swap180(pitch*toDeg)*toRad
 
     
+
+    
+    '''    
     if roll*toDeg > 80 or roll*toDeg < -80:
         P = 0
     roll = constrain(roll,-80*toRad,80*toRad)
     
     if pitch*toDeg > 80 or pitch*toDeg < -80:
         Q = 0
-    pitch = constrain(pitch,-80*toRad,80*toRad)
+    pitch = constrain(pitch,-80*toRad,80*toRad)'''
 
     return roll*toDeg ,pitch*toDeg,yaw*toDeg
     
