@@ -41,4 +41,7 @@ def sign(val):
         return -1
     else:
         return 1
+def printf(val):
+    formatted = "{:.2f}".format(val)
+    print(formatted)
 

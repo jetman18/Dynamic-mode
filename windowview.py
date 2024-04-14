@@ -12,32 +12,32 @@ class window():
     x_offset = 0
     y_offset = 0
     #roll
-    label1=Label(root, text='Roll:', font=('Helvetica 10'))
+    label1=Label(root, text='roll:', font=('Helvetica 10'))
     label1.place(x=10 + x_offset,y=10 + y_offset)
     label11=Label(root, text='0.0', font=('Helvetica 10'))
     label11.place(x=50 + x_offset,y=10 + y_offset)
     #pitch
-    label2=Label(root, text='Pitch:', font=('Helvetica 10'))
+    label2=Label(root, text='pitch:', font=('Helvetica 10'))
     label2.place(x=10 + x_offset,y=35 + y_offset)
     label22=Label(root, text='0.0', font=('Helvetica 10'))
     label22.place(x=50 + x_offset,y=35 + y_offset)
     #yaw
-    label3=Label(root, text='Yaw:', font=('Helvetica 10'))
+    label3=Label(root, text='yaw:', font=('Helvetica 10'))
     label3.place(x=10 + x_offset,y=60 + y_offset)
     label33=Label(root, text='0.0', font=('Helvetica 10'))
     label33.place(x=50 + x_offset,y=60 + y_offset)
     #altitude
-    label4=Label(root, text='Alt:', font=('Helvetica 10'))
+    label4=Label(root, text='alt:', font=('Helvetica 10'))
     label4.place(x=10 + x_offset,y=85 + y_offset)
     label44=Label(root, text='0.0', font=('Helvetica 10'))
     label44.place(x=50 + x_offset,y=85 + y_offset)
     #lat
-    label5=Label(root, text='Lat:', font=('Helvetica 10'))
+    label5=Label(root, text='lat:', font=('Helvetica 10'))
     label5.place(x=10 + x_offset,y=110 + y_offset)
     label55=Label(root, text='0.0', font=('Helvetica 10'))
     label55.place(x=50 + x_offset,y=110 + y_offset)
     #lon
-    label6=Label(root, text='Lon:', font=('Helvetica 10'))
+    label6=Label(root, text='lon:', font=('Helvetica 10'))
     label6.place(x=10 + x_offset,y=135 + y_offset)
     label66=Label(root, text='0.0', font=('Helvetica 10'))
     label66.place(x=50 + x_offset,y=135 + y_offset)
@@ -45,10 +45,12 @@ class window():
     label7=Label(root, text='yaw_dot:', font=('Helvetica 10'))
     label7.place(x=10 + x_offset,y=160 + y_offset)
     label77=Label(root, text='0.0', font=('Helvetica 10'))
-    label77.place(x=50 + x_offset,y=160 + y_offset)
+    label77.place(x=70 + x_offset,y=160 + y_offset)
 
     thrust_text=Label(root, text='thrust', font=('Helvetica 10'))
     thrust_text.place(x=10 + x_offset,y=185 + y_offset)
+    thrust_value =Label(root, text='0.0', font=('Helvetica 10'))
+    thrust_value.place(x=50 + x_offset,y=185 + y_offset)
 
     ww = Scale(root, from_=-9, to=9,resolution=0.1,length=100)
     ww.place(x=400,y=100)
@@ -145,7 +147,7 @@ class window():
         window.root.after(100,self.update_sc)
         window.root.mainloop()
         self.pp1.send('close')
-    def isRun(self):
+    def isClose(self):
         if self.run:
             if self.pp2.poll():
                 rec = self.pp2.recv()
