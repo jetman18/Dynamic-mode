@@ -24,7 +24,7 @@ wing_area       = 0.21        # m*m  ref area
 wing_ctrl_area  = 0.015       # control surface area
 rudder_area     = 0.0168
 Cd_o            = 0.14        # drag coeffient zero
-Cl_0            = 0.002
+Cl_0            = 0.01
 aileron_Cl      = 0.011
 aileron_Cd      = 0.0013
 dis_aile2center = 0.12
@@ -49,7 +49,7 @@ init_altitude  =  50
 r_dot   = 0
 p_dot   = 0
 y_dot   = 0
-isFly = 0
+isFlying = 0
 alpha = 0  # attack of angle
 beta = 0   # sideslip angle
 velocity = 0
@@ -79,7 +79,7 @@ def control_cmd(thrust,servoL,servoR):
 
 def loop(dt):
     global yaw,vex,vey,vez,alpha,T,roll,pitch,yaw,alpha,ch2,ch3
-    global px,py,pz,P,Q,R,isFly,ctrl_left,ctrl_right,U,V,W,velocity
+    global px,py,pz,P,Q,R,isFlying,ctrl_left,ctrl_right,U,V,W,velocity
 
     cosx = cos(roll)
     cosy = cos(pitch)
@@ -163,9 +163,9 @@ def loop(dt):
 
     #print(round(accEx,2) ,' ',round(accEy,2) ,' ',round(accEz,2))
     # zero acce z on ground
-    if accEz > 0 and isFly == 0:
-        isFly = 1 
-    elif accEz < 0 and isFly == 0:
+    if accEz > 0 and isFlying == 0:
+        isFlying = 1 
+    elif accEz < 0 and isFlying == 0:
         accEz = 0 
     
     px += vex*dt + 0.5*accEx*dt*dt
@@ -208,8 +208,8 @@ def loop(dt):
     drag_left   = dynamic_p*wing_ctrl_area*aileron_Cd*ctrl_left
     drag_right  = dynamic_p*wing_ctrl_area*aileron_Cd*ctrl_right
 
-    drag_left = 0
-    drag_right = 0
+    #drag_left = 0
+    #drag_right = 0
 
     # pitching moment
     Cm_p = (0.002*pow(alpha,3) + 0.5*alpha)*0.0002 + Cm_o

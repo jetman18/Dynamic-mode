@@ -49,7 +49,7 @@ init_altitude  =  50
 r_dot   = 0
 p_dot   = 0
 y_dot   = 0
-isFly = 0
+isFlying = 0
 alpha = 0  # attack of angle
 beta = 0   # sideslip angle
 
@@ -78,7 +78,7 @@ def control_cmd(thrust,servoL,servoR):
 
 def loop(dt):
     global yaw,vex,vey,vez,alpha,T,roll,pitch,yaw,alpha,ch2,ch3
-    global px,py,pz,P,Q,R,isFly,ctrl_left,ctrl_right
+    global px,py,pz,P,Q,R,isFlying,ctrl_left,ctrl_right
 
     cosx = cos(roll)
     cosy = cos(pitch)
@@ -146,9 +146,9 @@ def loop(dt):
     accEz = Fez/mass
     
     # zero acce z on ground
-    if accEz > 0 and isFly == 0:
-        isFly = 1 
-    elif accEz < 0 and isFly == 0:
+    if accEz > 0 and isFlying == 0:
+        isFlying = 1 
+    elif accEz < 0 and isFlying == 0:
         accEz = 0 
     
     px += vex*dt + 0.5*accEx*dt*dt

@@ -1,12 +1,16 @@
-def control(aileron,elevator,throttle):
+def control(roll,pitch,yaw,latitude,longitude,altitude):
     str_ =''
-    str_ += str(aileron)
+    str_ += str(roll)
     str_ +='\t'
-    str_ += str(-elevator)
+    str_ += str(pitch)
     str_ +='\t'
-    str_ += str(throttle)
-    #str_ +='\t'
-    #str_ += str(stater)
+    str_ += str(yaw)
+    str_ +='\t'
+    str_ += str(latitude)
+    str_ +='\t'
+    str_ += str(longitude)
+    str_ +='\t'
+    str_ += str(altitude*3.280839895)
     str_ +='\n'
     bytess = bytes(str_, 'utf-8')
     return bytess
