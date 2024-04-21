@@ -18,8 +18,9 @@ if joystick_count > 0:
 
 ch2 = 0
 ch3 = 0
+throtlle = 0
 def getjoystick():
-    global ch2,ch3
+    global ch2,ch3,throtlle
     for event in pygame.event.get():
         if event.type == pygame.JOYAXISMOTION:
             # Axis motion is JOYAXISMOTION
@@ -29,9 +30,12 @@ def getjoystick():
                 ch2 = value
             elif axis == 3:
                 ch3 = value
-            #print(f"Axis {axis} value: {value}")
+            elif axis == 4:
+                throtlle = value+ 1
+                #throtlle = max(0,-value)
+            #print(f"Axis {axis} value: {throtlle}")
         elif event.type == pygame.JOYBUTTONDOWN:
             # Button press is JOYBUTTONDOWN
             button = event.button
             #print(f"Button {button} pressed")
-    return ch2,ch3
+    return ch2,ch3,throtlle/2

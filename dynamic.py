@@ -19,12 +19,12 @@ gravity      = -9.81
 
 # dynamic parameters
 air_density     = 1.293
-mass            = 0.9         # weight of aircraft
+mass            = 0.9         # weight of aircraft  0.9
 wing_area       = 0.21        # m*m  ref area
 wing_ctrl_area  = 0.015       # control surface area
 rudder_area     = 0.0168
 Cd_o            = 0.14        # drag coeffient zero
-Cl_0            = 0.01
+Cl_0            = 0.03
 aileron_Cl      = 0.011
 aileron_Cd      = 0.0013
 dis_aile2center = 0.12
@@ -39,11 +39,9 @@ Cm_o            = -0.0
 Ixx             = 0.0106
 Iyy             = 0.018 
 Izz             = 0.0251
-#init_latitude  = 37.628715674334124
-#init_longitude = -122.39334575867426
 init_latitude  = 37.472
 init_longitude = -121.170
-init_altitude  =  50
+init_altitude  =  500
 
 # attitude
 r_dot   = 0
@@ -63,13 +61,16 @@ px = 0; py = 0; pz = 0
 P = 0; Q = 0; R = 0
 U = 0; V = 0; W = 0
 
-T_max = 500 # thrust (N)
+T_max = 15 # thrust (N)
 T = 0
 ctrl_left = 0
 ctrl_right = 0
 
-ch2 = 0
-ch3 = 0
+accx = 0
+accy = 0
+accz = 0
+
+total_fly_dis = 0
 
 def control_cmd(thrust,servoL,servoR):
     global ctrl_left,ctrl_right,T
@@ -78,8 +79,9 @@ def control_cmd(thrust,servoL,servoR):
     T = T_max*(thrust - 1000)/1000
 
 def loop(dt):
-    global yaw,vex,vey,vez,alpha,T,roll,pitch,yaw,alpha,ch2,ch3
+    global yaw,vex,vey,vez,alpha,T,roll,pitch,yaw,alpha,accx,ch3,P,Q,R
     global px,py,pz,P,Q,R,isFlying,ctrl_left,ctrl_right,U,V,W,velocity
+    global p_dot,r_dot,accy,accz,total_fly_dis
 
     cosx = cos(roll)
     cosy = cos(pitch)
@@ -138,6 +140,10 @@ def loop(dt):
     g_bx =  gravity*siny
     g_by = -gravity*cosy*sinx
     g_bz =  gravity*cosx*cosy
+
+    accx = g_bx;
+    accy = g_by;
+    accz = g_bz;
     
     Fbx += mass*g_bx + T
     Fby += mass*g_by
@@ -147,6 +153,8 @@ def loop(dt):
     acc_bx = Fbx/mass
     acc_by = Fby/mass
     acc_bz = Fbz/mass
+
+
 
     
     #print(round(acc_bx,2) ,' ',round(acc_by,2) ,' ',round(acc_bz,2))
@@ -163,18 +171,25 @@ def loop(dt):
 
     #print(round(accEx,2) ,' ',round(accEy,2) ,' ',round(accEz,2))
     # zero acce z on ground
+    '''
     if accEz > 0 and isFlying == 0:
         isFlying = 1 
     elif accEz < 0 and isFlying == 0:
         accEz = 0 
-    
+    '''
     px += vex*dt + 0.5*accEx*dt*dt
     py += vey*dt + 0.5*accEy*dt*dt
     pz += vez*dt + 0.5*accEz*dt*dt
 
+    if pz <=0:
+        pz = 0
+        vez = 0
+
     vex +=  accEx*dt 
     vey +=  accEy*dt
     vez +=  accEz*dt
+
+    total_fly_dis = sqrt(px*px + py*py)
     #print(round(vex,2) ,' ',round(vey,2) ,' ',round(vez,2))
 
     
@@ -188,15 +203,6 @@ def loop(dt):
                ch3
                 |
                -1
-    '''
-    '''  
-    ch2 = 0.5*pow(ch2,3) + 0.15*ch2
-    ch3 = 0.5*pow(ch3,3) + 0.15*ch3  
-
-    ctrl_left  = -ch2 + ch3
-    ctrl_right =  ch2 + ch3
-    ctrl_left = constrain(ctrl_left,-1,1)
-    ctrl_right = constrain(ctrl_right,-1,1)
     '''
 
     #scale to deg
@@ -244,6 +250,11 @@ def loop(dt):
     roll  = swap180(roll*toDeg)*toRad
     pitch = swap180(pitch*toDeg)*toRad
 
+def total_fly():
+    return total_fly_dis
+
+def imu_get():
+    return P*toDeg,Q*toDeg,R*toDeg,accx,accy,accz
 
 def get_velocity():
     return velocity
@@ -264,6 +275,7 @@ def get_R():
     return R*toDeg
 
 def get_Q():
+    global Q
     return Q*toDeg
 
 def get_P():

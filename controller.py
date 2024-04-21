@@ -1,5 +1,4 @@
 import config as cfg
-import dynamic1
 from utils import *
 
 

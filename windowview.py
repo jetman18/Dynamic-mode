@@ -32,17 +32,17 @@ class window():
     label44=Label(root, text='0.0', font=('Helvetica 10'))
     label44.place(x=50 + x_offset,y=85 + y_offset)
     #lat
-    label5=Label(root, text='lat:', font=('Helvetica 10'))
+    label5=Label(root, text='v:', font=('Helvetica 10'))
     label5.place(x=10 + x_offset,y=110 + y_offset)
     label55=Label(root, text='0.0', font=('Helvetica 10'))
     label55.place(x=50 + x_offset,y=110 + y_offset)
     #lon
-    label6=Label(root, text='lon:', font=('Helvetica 10'))
+    label6=Label(root, text='dis:', font=('Helvetica 10'))
     label6.place(x=10 + x_offset,y=135 + y_offset)
     label66=Label(root, text='0.0', font=('Helvetica 10'))
     label66.place(x=50 + x_offset,y=135 + y_offset)
     #yaw dot
-    label7=Label(root, text='yaw_dot:', font=('Helvetica 10'))
+    label7=Label(root, text='y_dot:', font=('Helvetica 10'))
     label7.place(x=10 + x_offset,y=160 + y_offset)
     label77=Label(root, text='0.0', font=('Helvetica 10'))
     label77.place(x=70 + x_offset,y=160 + y_offset)
@@ -82,13 +82,13 @@ class window():
     def setAttitude(self,roll,pitch,yaw,alt,lat,lon,yaw_dot):
         if time.time() - self.last_t > 0.4:
             self.last_t = time.time()
-            da = struct.pack('iiiiddi',roll,pitch,yaw,alt,lat,lon,int(yaw_dot))
+            da = struct.pack('ddiiddi',roll,pitch,yaw,alt,lat,lon,int(yaw_dot))
             self.p2.send(da)
        
     def update_sc(self):
         if self.p1.poll():
             data = self.p1.recv()
-            data = struct.unpack('iiiiddi',data)
+            data = struct.unpack('ddiiddi',data)
             window.label11.configure(text=str(data[0]))
             window.label22.configure(text=str(data[1]))
             window.label33.configure(text=str(data[2]))
