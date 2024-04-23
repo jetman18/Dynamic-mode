@@ -1,2 +1,2 @@
 # Dynamic-mode
- dynamic mode for narow uav
+ dynamic mode of arrow uav
